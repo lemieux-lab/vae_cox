@@ -1,3 +1,41 @@
+#### VAE functions 
+
+struct VariationalEncoder
+    linear
+    mu
+    log_sigma
+end
+    
+function VariationalEncoder(input_dim::Int, latent_dim::Int, hidden_dim::Int;device = gpu) 
+    return VariationalEncoder(
+    device(Dense(input_dim, hidden_dim, leakyrelu)),   # linear
+    device(Dense(hidden_dim, latent_dim)),        # mu
+    device(Dense(hidden_dim, latent_dim)))        # log sigma
+end 
+
+function (encoder::VariationalEncoder)(x)
+    h = encoder.linear(x)
+    encoder.mu(h), encoder.log_sigma(h)
+end
+Decoder(input_dim::Int, latent_dim::Int, hidden_dim::Int;device = gpu) = Chain(
+    device(Dense(latent_dim, hidden_dim, leakyrelu)),
+    device(Dense(hidden_dim, input_dim))
+)
+function MyReconstruct(encoder, decoder, x;device=gpu)
+    mu, log_sigma = encoder(x)
+    z = mu + device(randn(Float32, size(log_sigma))) .* exp.(log_sigma)
+    mu, log_sigma, decoder(z)
+end
+
+# KL-divergence
+function VAE_lossf(venc, vdec, X)
+    mu, log_sigma, decoder_z = MyReconstruct(venc, vdec, X);
+    nb_samples = size(X)[2]
+    kl = 0.5f0 * sum(@. exp(log_sigma * 2f0) + mu ^ 2 - 1f0 - 2 * log_sigma) / nb_samples;
+    mse = Flux.mse(X, decoder_z,agg=sum) / nb_samples
+    return kl + mse 
+end 
+
 ##### Model specifications
 struct dnn
     model::Flux.Chain 
