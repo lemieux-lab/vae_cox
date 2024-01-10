@@ -190,6 +190,13 @@ function l2_penalty(model::Flux.Chain)
     end 
     return l2_sum
 end
+function l2_penalty(model::VariationalEncoder)
+    l2_sum = 0
+    l2_sum += sum(abs2, model.linear.weight)
+    l2_sum += sum(abs2, model.mu.weight)
+    l2_sum += sum(abs2, model.log_sigma.weight)
+    return l2_sum
+end
 function l2_penalty(model::enccphdnn)
     l2_sum = 0
     for wm in Flux.Chain(model.cphdnn...)
@@ -584,7 +591,17 @@ function build_ae_cph_dnn(model_params)
                         "ae" => AE)  
     return aecphdnn
 end 
-function build_vaecox(model_params)
+
+function build_vaecox(params_dict)
+    encoder = VariationalEncoder(params_dict["insize"], params_dict["dim_redux"], params_dict["venc_hl_size"]) # chain 
+    decoder = Decoder(params_dict["insize"], params_dict["dim_redux"], params_dict["venc_hl_size"]) # chain 
+    cph = gpu(Chain(Dense(params_dict["dim_redux"], params_dict["cph_hl_size"], leakyrelu), Dense(params_dict["cph_hl_size"], params_dict["cph_hl_size"],leakyrelu), Dense(params_dict["cph_hl_size"], 1))) # chain 
+    return Dict("venc" => encoder,
+    "vdec" => decoder,
+    "cph" => cph )
+end
+
+function build_aecox(model_params)
     encoder = build_encoder(model_params)
     decoder, output_layer = build_decoder(model_params)
     #dnn_chain = build_internal_dnn(encoder, model_params)
