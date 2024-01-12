@@ -19,6 +19,7 @@ function (encoder::VariationalEncoder)(x)
 end
 Decoder(input_dim::Int, latent_dim::Int, hidden_dim::Int;device = gpu) = Chain(
     device(Dense(latent_dim, hidden_dim, leakyrelu)),
+    device(Dense(hidden_dim, hidden_dim, leakyrelu)),
     device(Dense(hidden_dim, input_dim))
 )
 function MyReconstruct(encoder, decoder, x;device=gpu)
