@@ -41,17 +41,6 @@ function MLDataset(infilename)
 end 
 
 
-function load_datasets()
-    ## load GE data (TPM norm)
-    ## samples in USI 
-    ## genes in symbols
-    ## biotypes (protein coding, non-coding)
-    ## labels (molecular classification)
-    return Dict("TCGA"=>MLDataset("Data/TCGA_BRCA_tpm_n1050_btypes_labels.h5"),
-    "TALL"=>MLDataset("Data/TARGET_ALL_tpm_n264_btypes_labels.h5"),
-    "BRCA"=>MLDataset("Data/TCGA_BRCA_tpm_n1050_btypes_labels.h5"),
-    "LAML"=>load_laml())
-end 
 function create_fetch_data_file(;prefix = "TARGET_ALL")
     baseurl = "https://api.gdc.cancer.gov/data"
     basepath = "Data/GDC_raw"

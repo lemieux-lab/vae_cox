@@ -1,7 +1,8 @@
 # module Init
 using Pkg
 Pkg.activate(".")
-# imports  
+# imports
+using cuDNN  
 using CSV
 using DataFrames
 using JSON
