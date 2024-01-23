@@ -75,6 +75,9 @@ function merge_GDC_data(basepath)
         dat = CSV.read("$basepath/$(file)", DataFrame, delim = "\t", header = 2)
         dat = dat[5:end, ["gene_name", "stranded_second"]]
         m[fid, :] = dat.stranded_second
+        if fid % 100 == 0
+            println("Processing: $(round(fid/length(files) * 100))%")
+        end
     end
     return m, files, genes, biotypes
 end 
@@ -189,7 +192,55 @@ function merge_LGN_data(sampleIDs)
     end 
     return m, sampleIDs, genes, biotypes
 end
+function preprocess_lgg()
+    m, samples, genes, biotypes = merge_GDC_data("Data/GDC_raw/TCGA_LGG")
+basepath = "Data/GDC_raw"
+FILES = "$basepath/TCGA_LGG_clinical.json"
+J = JSON.parsefile(FILES)
+submitids, case_ids, surves, survts, labels = [], [],[],[], []
+counter = 0
+for (i,F) in enumerate(J)
+    if "demographic" in keys(F) 
 
+    case_id = F["case_id"]
+    submitter_ID = split(F["demographic"]["submitter_id"],"_")[1]
+    surve = F["demographic"]["vital_status"] == "Dead" ? 1 : 0 # status 
+    if surve == 1 && "days_to_death" in keys(F["demographic"])
+        survt = Int(F["demographic"]["days_to_death"]) 
+        push!(submitids, submitter_ID)
+        push!(case_ids, case_id)
+        push!(surves, surve)
+        push!(survts, survt)
+        morph = F["diagnoses"][1]["morphology"]
+        push!(labels, morph) 
+        #println("$i $(case_id) $submitter_ID $surve $survt")
+    elseif surve == 0
+        survt = Int(F["diagnoses"][1]["days_to_last_follow_up"])
+        push!(submitids, submitter_ID)
+        push!(case_ids, case_id)
+        push!(surves, surve)
+        push!(survts, survt)
+        morph = F["diagnoses"][1]["morphology"]
+        push!(labels, morph) 
+        #println("$i $(case_id) $submitter_ID $surve $survt")
+    end
+    #ttms = [x["treatment_or_therapy"] == "yes" for x in F["diagnoses"][1]["treatments"]]
+    
+    end 
+    end 
+    outfilename = "Data/TCGA_LGG_tpm_n513_btypes_labels_surv.h5"
+    CLIN_df = DataFrame(:case_id=>case_ids, :submitid=>submitids,:survt=>Array{Int}(survts),:surve=>Array{Int}(surves), :morph=>labels)
+    samples_df = sort(innerjoin(DataFrame(:case_id=>samples, :II=>collect(1:length(samples))), CLIN_df, on = :case_id), :II)
+    outfile = h5open(outfilename, "w")
+    outfile["data"] = log10.(m[samples_df.II,:] .+ 1) 
+    outfile["samples"] = Array{String}(samples[samples_df.II]) 
+    outfile["labels"] = Array{String}(samples_df.morph) 
+    outfile["genes"] = Array{String}(genes) 
+    outfile["biotypes"] = Array{String}(biotypes)
+    outfile["survt"] = samples_df.survt
+    outfile["surve"] = samples_df.surve
+    close(outfile)
+end 
 function process_lgn()
     lgn_pronostic_CF = CSV.read("Data/LEUCEGENE/lgn_pronostic_CF", DataFrame)
     sampleIDs = Array{String}(lgn_pronostic_CF[:,"sampleID"])
