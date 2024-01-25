@@ -253,69 +253,10 @@ end
 function crossentropy_l2(model, X, Y;weight_decay = 1e-6)
     return Flux.Losses.logitcrossentropy(model.model(X), Y) + l2_penalty(model) * weight_decay
 end 
-function cox_l2(mdl::enccphdnn, X, X_c, Y_e, NE_frac, wd)
-    return cox_nll_vec(mdl,X, X_c, Y_e, NE_frac) + wd * l2_penalty(mdl) 
-end
-function cox_l2(mdl::dnn, X, Y_e, NE_frac, wd)
-    return cox_nll_vec(mdl,X, Y_e, NE_frac) + wd * l2_penalty(mdl) 
-end
-function cox_l2(mdl::dnn,enc::Chain, X, X_c, Y_e, NE_frac, wd)
-    return cox_nll_vec(mdl,enc, X, X_c,  Y_e, NE_frac) + wd * (l2_penalty(mdl) + l2_penalty(enc)) 
-end
-function cox_l2(mdl::dnn,enc::Chain, X, Y_e, NE_frac, wd)
-    return cox_nll_vec(mdl,enc, X,  Y_e, NE_frac) + wd * (l2_penalty(mdl) + l2_penalty(enc)) 
-end
-function cox_l2(mdl::dnn, X, X_c, Y_e, NE_frac, wd)
-    return cox_nll_vec(mdl, X_c,  Y_e, NE_frac) + wd * (l2_penalty(mdl) + l2_penalty(enc)) 
-end
-function cox_nll_vec(mdl::dnn, X_, Y_e_, NE_frac)
-    outs = vec(mdl.model(X_))
-    #outs = vec(mdl.cphdnn(mdl.encoder(X_)))
-    hazard_ratios = exp.(outs)
-    log_risk = log.(cumsum(hazard_ratios))
-    uncensored_likelihood = outs .- log_risk
-    censored_likelihood = uncensored_likelihood .* Y_e_'
-    #neg_likelihood = - sum(censored_likelihood) / sum(e .== 1)
-    neg_likelihood = - sum(censored_likelihood) * NE_frac
-    return neg_likelihood
-end 
-function cox_nll_vec(mdl::dnn, X_, X_c_, Y_e_, NE_frac)
-    outs = vec(mdl.model( vcat(X_, X_c_)))
-    #outs = vec(mdl.cphdnn(mdl.encoder(X_)))
-    hazard_ratios = exp.(outs)
-    log_risk = log.(cumsum(hazard_ratios))
-    uncensored_likelihood = outs .- log_risk
-    censored_likelihood = uncensored_likelihood .* Y_e_'
-    #neg_likelihood = - sum(censored_likelihood) / sum(e .== 1)
-    neg_likelihood = - sum(censored_likelihood) * NE_frac
-    return neg_likelihood
-end 
-function cox_nll_vec(mdl::dnn, enc::Chain, X_, Y_e_, NE_frac)
-    outs = vec(mdl.model(enc(X_)))
-    #outs = vec(mdl.cphdnn(mdl.encoder(X_)))
-    hazard_ratios = exp.(outs)
-    log_risk = log.(cumsum(hazard_ratios))
-    uncensored_likelihood = outs .- log_risk
-    censored_likelihood = uncensored_likelihood .* Y_e_'
-    #neg_likelihood = - sum(censored_likelihood) / sum(e .== 1)
-    neg_likelihood = - sum(censored_likelihood) * NE_frac
-    return neg_likelihood
-end 
 
-function cox_nll_vec(mdl::dnn, enc::Chain, X_, X_c_, Y_e_, NE_frac)
-    outs = vec(mdl.model( vcat(enc(X_), X_c_)))
-    #outs = vec(mdl.cphdnn(mdl.encoder(X_)))
-    hazard_ratios = exp.(outs)
-    log_risk = log.(cumsum(hazard_ratios))
-    uncensored_likelihood = outs .- log_risk
-    censored_likelihood = uncensored_likelihood .* Y_e_'
-    #neg_likelihood = - sum(censored_likelihood) / sum(e .== 1)
-    neg_likelihood = - sum(censored_likelihood) * NE_frac
-    return neg_likelihood
-end 
 
-function cox_nll_vec(mdl::enccphdnn, x_, x_c_, Y_e_, NE_frac)
-    outs = vec(mdl.cphdnn(vcat(mdl.encoder(x_), x_c_)))
+function cox_nll_vec(mdl::Chain, X_, Y_e_, NE_frac)
+    outs = vec(mdl(X_))
     #outs = vec(mdl.cphdnn(mdl.encoder(X_)))
     hazard_ratios = exp.(outs)
     log_risk = log.(cumsum(hazard_ratios))

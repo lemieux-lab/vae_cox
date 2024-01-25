@@ -41,6 +41,75 @@ function MLDataset(infilename)
 end 
 
 
+function format_train_test(fold; device = gpu)
+    # NO ordering ! 
+    nsamples = size(fold["train_x"])[1]
+    ordering = sortperm(-fold["Y_t_train"])
+    train_x = device(Matrix(fold["train_x"][ordering,:]'));
+    train_y_t = device(Matrix(fold["Y_t_train"][ordering,:]'));
+    train_y_e = device(Matrix(fold["Y_e_train"][ordering,:]'));
+    NE_frac_tr = sum(train_y_e .== 1) != 0 ? 1 / sum(train_y_e .== 1) : 0
+
+    nsamples = size(fold["test_x"])[1]
+    ordering = sortperm(-fold["Y_t_test"])
+    test_x = device(Matrix(fold["test_x"][ordering,:]'));
+    test_y_t = device(Matrix(fold["Y_t_test"][ordering,:]'));
+    test_y_e = device(Matrix(fold["Y_e_test"][ordering,:]'));
+    NE_frac_tst = sum(test_y_e .== 1) != 0 ? 1 / sum(test_y_e .== 1) : 0
+    return train_x, train_y_t, train_y_e, NE_frac_tr, test_x, test_y_t, test_y_e, NE_frac_tst
+end 
+function data_prep(DATA::MLDataset, params_dict;nfolds = 5, nepochs =2000, dim_redux= 125, dataset="NA")
+    keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
+    println("nb genes : $(sum(keep))")
+    println("nb patients : $(size(DATA.samples)[1])")
+    # split train test
+    folds = split_train_test(Matrix(DATA.data[:,keep]), DATA.labels;nfolds =5)
+    fold = folds[1]
+    # format input data  
+    
+    train_x = gpu(Matrix(fold["train_x"]'));
+    train_y = gpu(fold["train_y"]); ## to do : binarize
+    
+    test_x = gpu(Matrix(fold["test_x"]'));
+    test_y = gpu(fold["test_y"]); ## to do : binarize 
+    
+    return train_x, train_y, test_x, test_y,  params_dict
+end
+
+function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125, dataset="NA")
+    keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
+    println("nb genes : $(sum(keep))")
+    println("nb patients : $(size(DATA.samples)[1])")
+    println("% uncensored : $(mean(DATA.surve .!= 0))")
+    params_dict = Dict(
+            ## run infos 
+            "session_id" => session_id, "nfolds" =>5,  "modelid" => "$(bytes2hex(sha256("$(now())"))[1:Int(floor(end/3))])",
+            "machine_id"=>strip(read(`hostname`, String)), "device" => "$(device())", "model_title"=>"AECPHDNN",
+            ## data infos 
+            "dataset" => dataset, "nsamples" => size(DATA.samples)[1],
+            "nsamples_test" => Int(round(size(DATA.samples)[1] / nfolds)), "ngenes" => size(DATA.genes[keep])[1],
+            "nsamples_train" => size(DATA.samples)[1] - Int(round(size(DATA.samples)[1] / nfolds)),
+            ## optim infos 
+            "nepochs" => nepochs, "ae_lr" =>1e-6, "cph_lr" => 1e-5, "ae_wd" => 1e-6, "cph_wd" => 1e-4,
+            ## model infos
+            "model_type"=> "cphdnn_v5", "dim_redux" => dim_redux, "ae_nb_hls" => 2,
+            "enc_nb_hl" => 2, "enc_hl_size"=> 128,
+            "venc_nb_hl" => 2, "venc_hl_size"=> 128,  "dec_nb_hl" => 2 , "dec_hl_size"=> 128,
+            "nb_clinf" => 0, "cph_nb_hl" => 2, "cph_hl_size" => 64, 
+            "insize" => size(DATA.genes[keep])[1],
+            ## metrics
+            "model_cv_complete" => false
+        )
+    # split train test
+    folds = split_train_test(Matrix(DATA.data[:,keep]), DATA.survt, DATA.surve, DATA.samples;nfolds =5)
+    fold = folds[1]
+    # format input data  
+    test_samples = DATA.samples[fold["test_ids"]]
+    train_x, train_y_t, train_y_e, NE_frac_tr, test_x, test_y_t, test_y_e, NE_frac_tst = format_train_test(fold)
+    return train_x, train_y_t, train_y_e, NE_frac_tr, test_samples, test_x, test_y_t, test_y_e, NE_frac_tst, params_dict
+end
+
+
 function create_fetch_data_file(;prefix = "TARGET_ALL")
     baseurl = "https://api.gdc.cancer.gov/data"
     basepath = "Data/GDC_raw"
