@@ -76,7 +76,7 @@ function data_prep(DATA::MLDataset, params_dict;nfolds = 5, nepochs =2000, dim_r
     return train_x, train_y, test_x, test_y,  params_dict
 end
 
-function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125, dataset="NA")
+function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125, dataset="NA", modeltype="NA")
     keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
     println("nb genes : $(sum(keep))")
     println("nb patients : $(size(DATA.samples)[1])")
@@ -92,7 +92,7 @@ function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125
             ## optim infos 
             "nepochs" => nepochs, "ae_lr" =>1e-6, "cph_lr" => 1e-5, "ae_wd" => 1e-6, "cph_wd" => 1e-4,
             ## model infos
-            "model_type"=> "cphdnn_v5", "dim_redux" => dim_redux, "ae_nb_hls" => 2,
+            "model_type"=> modeltype, "dim_redux" => dim_redux, "ae_nb_hls" => 2,
             "enc_nb_hl" => 2, "enc_hl_size"=> 128,
             "venc_nb_hl" => 2, "venc_hl_size"=> 128,  "dec_nb_hl" => 2 , "dec_hl_size"=> 128,
             "nb_clinf" => 0, "cph_nb_hl" => 2, "cph_hl_size" => 64, 
