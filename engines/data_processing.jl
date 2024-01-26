@@ -95,7 +95,7 @@ function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125
             "model_type"=> modeltype, "dim_redux" => dim_redux, "ae_nb_hls" => 2,
             "enc_nb_hl" => 2, "enc_hl_size"=> 128,
             "venc_nb_hl" => 2, "venc_hl_size"=> 128,  "dec_nb_hl" => 2 , "dec_hl_size"=> 128,
-            "nb_clinf" => 0, "cph_nb_hl" => 2, "cph_hl_size" => 64, 
+            "nb_clinf" => 0, "cph_nb_hl" => 2, "cph_hl_size" => 512, 
             "insize" => size(DATA.genes[keep])[1],
             ## metrics
             "model_cv_complete" => false
