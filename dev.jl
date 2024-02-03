@@ -17,15 +17,16 @@ BRCA = MLSurvDataset("Data/TCGA_BRCA_tpm_n1049_btypes_labels_surv.h5")
 nfolds = 5 
 nepochs = 10000
 dim_redux= 1000
-dataset="BRCA"
+dataset="LGG"
 keep = [occursin("protein_coding", bt) for bt in BRCA.biotypes]
 brca_train_x, brca_train_y_t, brca_train_y_e, brca_NE_frac_tr, brca_test_samples, brca_test_x, brca_test_y_t, brca_test_y_e, brca_NE_frac_tst, brca_params_dict = data_prep(BRCA,nepochs = 20_000, dataset = "BRCA", modeltype = "meta_cphdnn_v1")
-lgg_train_x, lgg_train_y_t, lgg_train_y_e, lgg_NE_frac_tr, lgg_test_samples, lgg_test_x, lgg_test_y_t, lgg_test_y_e, lgg_NE_frac_tst, lgg_params_dict = data_prep(LGG,nepochs = 2_000, dataset = "LGG")
-ov_train_x, ov_train_y_t, ov_train_y_e, ov_NE_frac_tr, ov_test_samples, ov_test_x, ov_test_y_t, ov_test_y_e, ov_NE_frac_tst, ov_params_dict = data_prep(OV,nepochs = 2_000, dataset = "OV")
-cph_opt = Flux.ADAM(1e-5) ## opt VAE
+lgg_train_x, lgg_train_y_t, lgg_train_y_e, lgg_NE_frac_tr, lgg_test_samples, lgg_test_x, lgg_test_y_t, lgg_test_y_e, lgg_NE_frac_tst, lgg_params_dict = data_prep(LGG,nepochs = 2_000, dataset = "LGG", modeltype = "meta_cphdnn_v1")
+ov_train_x, ov_train_y_t, ov_train_y_e, ov_NE_frac_tr, ov_test_samples, ov_test_x, ov_test_y_t, ov_test_y_e, ov_NE_frac_tst, ov_params_dict = data_prep(OV,nepochs = 2_000, dataset = "OV", modeltype = "meta_cphdnn_v1")
+cph_opt = Flux.ADAM(1e-6) ## opt VAE
+params_dict = lgg_params_dict
 cph_wd = params_dict["cph_wd"]
-#cphdnn = gpu(Chain(Dense(params_dict["insize"],512, leakyrelu), Dense(512,512, leakyrelu), Dense(512, 1, bias = false)))
-cphdnn = gpu(Chain(Dense(params_dict["insize"], 1, bias = false)))
+cphdnn = gpu(Chain(Dense(params_dict["insize"],512, leakyrelu), Dense(512,512, leakyrelu), Dense(512, 1, bias = false)))
+#cphdnn = gpu(Chain(Dense(params_dict["insize"], 1, bias = false)))
 
 for i in 1:brca_params_dict["nepochs"]
     cph_ps = Flux.params(cphdnn)
@@ -35,15 +36,23 @@ for i in 1:brca_params_dict["nepochs"]
         cox_nll_vec(cphdnn, ov_train_x, ov_train_y_e, ov_NE_frac_tr) +  
         l2_penalty(cphdnn) * cph_wd 
     end 
-    OUTS_tr = cphdnn(brca_train_x)
-    OUTS_tst = cphdnn(brca_test_x)
+    # OUTS_tr = cphdnn(brca_train_x)
+    # OUTS_tst = cphdnn(brca_test_x)
+    
+    OUTS_tr = cphdnn(lgg_train_x)
+    OUTS_tst = cphdnn(lgg_test_x)
+    
     lossval_combined = cox_nll_vec(cphdnn, brca_train_x, brca_train_y_e, brca_NE_frac_tr) +  
     cox_nll_vec(cphdnn, lgg_train_x, lgg_train_y_e, lgg_NE_frac_tr) +  
     cox_nll_vec(cphdnn, ov_train_x, ov_train_y_e, ov_NE_frac_tr) +  
     l2_penalty(cphdnn) * cph_wd
 
-    cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(brca_train_y_t, brca_train_y_e, -1 * OUTS_tr)
-    cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(brca_test_y_t, brca_test_y_e, -1 *OUTS_tst)
+    # cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(brca_train_y_t, brca_train_y_e, -1 * OUTS_tr)
+    cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(lgg_train_y_t, lgg_train_y_e, -1 * OUTS_tr)
+    
+    # cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(brca_test_y_t, brca_test_y_e, -1 *OUTS_tst)
+    cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(lgg_test_y_t, lgg_test_y_e, -1 * OUTS_tst)
+    
     if i % 1000 ==  0 || i == 1
         println("$i TRAIN lossval combined : $(round(lossval_combined,digits =3)) cind: $(round(cind_tr, digits = 3)) \t TEST cind: $(round(cind_test, digits = 3)) [$(Int(cdnt_tst)), $(Int(ddnt_tst)), $(Int(tied_tst))]")
     end 
