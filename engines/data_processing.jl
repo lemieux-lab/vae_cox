@@ -120,7 +120,12 @@ function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125
     println("nb genes : $(sum(keep))")
     println("nb patients : $(size(DATA.samples)[1])")
     println("% uncensored : $(mean(DATA.surve .!= 0))")
-    
+    params_dict["dataset"] = dataset
+    params_dict["nsamples"] = size(DATA.samples)[1]
+    params_dict["nsamples_test"] = Int(round(size(DATA.samples)[1] / params_dict["nfolds"]))
+    params_dict["ngenes"] = size(DATA.genes[keep])[1]
+    params_dict["nsamples_train"] = size(DATA.samples)[1] - Int(round(size(DATA.samples)[1] / params_dict["nfolds"]))
+    params_dict["insize"] = size(DATA.genes[keep])[1]
     # split train test
     folds = split_train_test(Matrix(DATA.data[:,keep]), DATA.survt, DATA.surve, DATA.samples;nfolds =5)
     fold = folds[1]
