@@ -5,113 +5,71 @@ include("engines/deep_learning.jl")
 include("engines/cross_validation.jl")
 #device!()
 outpath, session_id = set_dirs() ;
-# BLCA 
-BLCA = MLSurvDataset("Data/TCGA_BLCA_tpm_n381_btypes_labels_surv.h5")
-# BRCA 
-BRCA = MLSurvDataset("Data/TCGA_BRCA_tpm_n1049_btypes_labels_surv.h5")
-# CESC 
-CESC = MLSurvDataset("Data/TCGA_CESC_tpm_n304_btypes_labels_surv.h5")
-# COAD 
-COAD = MLSurvDataset("Data/TCGA_COAD_tpm_n455_btypes_labels_surv.h5")
-# ESCA 
-ESCA = MLSurvDataset("Data/TCGA_ESCA_tpm_n184_btypes_labels_surv.h5")
-# GBM 
-GBM = MLSurvDataset("Data/TCGA_GBM_tpm_n161_btypes_labels_surv.h5")
-# HNSC 
-HNSC = MLSurvDataset("Data/TCGA_HNSC_tpm_n519_btypes_labels_surv.h5")
-# KIRC 
-KIRC = MLSurvDataset("Data/TCGA_KIRC_tpm_n533_btypes_labels_surv.h5")
-# KIRP 
-KIRP = MLSurvDataset("Data/TCGA_KIRP_tpm_n289_btypes_labels_surv.h5")
-# LGG 
-LGG = MLSurvDataset("Data/TCGA_LGG_tpm_n513_btypes_labels_surv.h5")
-# LIHC
-LIHC = MLSurvDataset("Data/TCGA_LIHC_tpm_n370_btypes_labels_surv.h5") 
-# LUAD
-LUAD = MLSurvDataset("Data/TCGA_LUAD_tpm_n508_btypes_labels_surv.h5")
-# LUSC 
-LUSC = MLSurvDataset("Data/TCGA_LUSC_tpm_n495_btypes_labels_surv.h5")
-# OV  
-OV = MLSurvDataset("Data/TCGA_OV_tpm_n420_btypes_labels_surv.h5")
-# PAAD 
-PAAD = MLSurvDataset("Data/TCGA_PAAD_tpm_n178_btypes_labels_surv.h5")
-# STAD 
-STAD = MLSurvDataset("Data/TCGA_STAD_tpm_n407_btypes_labels_surv.h5")
-# UCEC 
-UCEC = MLSurvDataset("Data/TCGA_UCEC_tpm_n544_btypes_labels_surv.h5")
+# loading datasets in RAM 
+tcga_datasets_list = ["Data/TCGA_datasets/$(x)" for x in readdir("Data/TCGA_datasets") ]
+hlsize,modeltype,nepochs= 512, "meta_cphdnn_v2",100_000
+base_params = Dict(
+        ## run infos 
+        "session_id" => session_id, "nfolds" =>5,
+        "machine_id"=>strip(read(`hostname`, String)), "device" => "$(device())", "model_title"=>"meta_cphdnn_with_tcga_datasets",
+        ## optim infos 
+        "nepochs" => nepochs, "ae_lr" =>0, "cph_lr" => 1e-6, "ae_wd" => 0, "cph_wd" => 1e-2,
+        ## model infos
+        "model_type"=> modeltype, "dim_redux" => hlsize, "ae_nb_hls" => 2,
+        "enc_nb_hl" => 0, "enc_hl_size"=> 0,
+        "venc_nb_hl" => 0, "venc_hl_size"=> 0,  "dec_nb_hl" => 0 , "dec_hl_size"=> 0,
+        "nb_clinf" => 0, "cph_nb_hl" => 2, "cph_hl_size" => hlsize
+        ## metrics
+)
+base_params["nparams"] = sum([*(size(x.weight)...) for x in cphdnn]) +  base_params["cph_nb_hl"] * base_params["cph_hl_size"]
+base_params["modelid"] = "$(bytes2hex(sha256("$(now())"))[1:Int(floor(end/3))])"
 
-#LAML = MLSurvDataset("Data/LGN_AML_tpm_n300_btypes_labels_surv.h5") 
-#TCGA = MLDataset("Data/TCGA_tpm_n10384_btypes_labels.h5")
-#for iter_id in 1:50
-
+tcga_datasets = load_tcga_datasets(tcga_datasets_list)
+# prepping datasets and loading to GPU 
+data_prep!(tcga_datasets, base_params)
 ### Replicate 50 times?
-### 1) pre-training on source set : OV + LGG + BRCA (train)
-nfolds = 5 
-nepochs = 5_000
-dim_redux= 1000
-dataset="BRCA"
-keep = [occursin("protein_coding", bt) for bt in BRCA.biotypes]
-brca_train_x, brca_train_y_t, brca_train_y_e, brca_NE_frac_tr, brca_test_samples, brca_test_x, brca_test_y_t, brca_test_y_e, brca_NE_frac_tst, brca_params_dict = data_prep(BRCA,nepochs = nepochs, dataset = "BRCA", modeltype = "meta_cphdnn_v1", cph_wd = 1e-2)
-lgg_train_x, lgg_train_y_t, lgg_train_y_e, lgg_NE_frac_tr, lgg_test_samples, lgg_test_x, lgg_test_y_t, lgg_test_y_e, lgg_NE_frac_tst, lgg_params_dict = data_prep(LGG,nepochs = nepochs, dataset = "LGG", modeltype = "meta_cphdnn_v1")
-ov_train_x, ov_train_y_t, ov_train_y_e, ov_NE_frac_tr, ov_test_samples, ov_test_x, ov_test_y_t, ov_test_y_e, ov_NE_frac_tst, ov_params_dict = data_prep(OV,nepochs = nepochs, dataset = "OV", modeltype = "meta_cphdnn_v1")
-BLCA_train_x, BLCA_train_y_t, BLCA_train_y_e, BLCA_NE_frac_tr, BLCA_test_samples, BLCA_test_x, BLCA_test_y_t, BLCA_test_y_e, BLCA_NE_frac_tst, BLCA_params_dict = data_prep(BLCA,nepochs = nepochs, dataset = "BLCA", modeltype = "meta_cphdnn_v1")
-CESC_train_x, CESC_train_y_t, CESC_train_y_e, CESC_NE_frac_tr, CESC_test_samples, CESC_test_x, CESC_test_y_t, CESC_test_y_e, CESC_NE_frac_tst, CESC_params_dict = data_prep(CESC,nepochs = nepochs, dataset = "CESC", modeltype = "meta_cphdnn_v1")
-COAD_train_x, COAD_train_y_t, COAD_train_y_e, COAD_NE_frac_tr, COAD_test_samples, COAD_test_x, COAD_test_y_t, COAD_test_y_e, COAD_NE_frac_tst, COAD_params_dict = data_prep(COAD,nepochs = nepochs, dataset = "COAD", modeltype = "meta_cphdnn_v1")
-ESCA_train_x, ESCA_train_y_t, ESCA_train_y_e, ESCA_NE_frac_tr, ESCA_test_samples, ESCA_test_x, ESCA_test_y_t, ESCA_test_y_e, ESCA_NE_frac_tst, ESCA_params_dict = data_prep(ESCA,nepochs = nepochs, dataset = "ESCA", modeltype = "meta_cphdnn_v1")
-HNSC_train_x, HNSC_train_y_t, HNSC_train_y_e, HNSC_NE_frac_tr, HNSC_test_samples, HNSC_test_x, HNSC_test_y_t, HNSC_test_y_e, HNSC_NE_frac_tst, HNSC_params_dict = data_prep(HNSC,nepochs = nepochs, dataset = "HNSC", modeltype = "meta_cphdnn_v1")
-LUAD_train_x, LUAD_train_y_t, LUAD_train_y_e, LUAD_NE_frac_tr, LUAD_test_samples, LUAD_test_x, LUAD_test_y_t, LUAD_test_y_e, LUAD_NE_frac_tst, LUAD_params_dict = data_prep(LUAD,nepochs = nepochs, dataset = "LUAD", modeltype = "meta_cphdnn_v1")
 
-cph_opt = Flux.ADAM(1e-6) ## opt VAE
-params_dict = brca_params_dict
-cph_wd = params_dict["cph_wd"]
-cphdnn = gpu(Chain(Dense(params_dict["insize"],512, leakyrelu), Dense(512,512, leakyrelu), Dense(512, 1, bias = false)))
-#cphdnn = gpu(Chain(Dense(params_dict["insize"], 1, bias = false)))
+cph_opt = Flux.ADAM(base_params["cph_lr"]) ## opt VAE
+cph_wd = base_params["cph_wd"]
+cphdnn = gpu(Chain(Dense(tcga_datasets["BRCA"]["params"]["insize"],base_params["cph_hl_size"], leakyrelu), 
+Dense(base_params["cph_hl_size"],base_params["cph_hl_size"], leakyrelu), 
+Dense(base_params["cph_hl_size"], 1, bias = false)))
 
-for i in 1:brca_params_dict["nepochs"]
+for i in 1:base_params["nepochs"]
     cph_ps = Flux.params(cphdnn)
+    # minibatch 
+    
+    DS_name = shuffle([k for k in keys(tcga_datasets)])[1]
     cph_gs = gradient(cph_ps) do 
-        cox_nll_vec(cphdnn, brca_train_x, brca_train_y_e, brca_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, lgg_train_x, lgg_train_y_e, lgg_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, ov_train_x, ov_train_y_e, ov_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, BLCA_train_x, BLCA_train_y_e, BLCA_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, CESC_train_x, CESC_train_y_e, CESC_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, COAD_train_x, COAD_train_y_e, COAD_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, ESCA_train_x, ESCA_train_y_e, ESCA_NE_frac_tr) + 
-        cox_nll_vec(cphdnn, HNSC_train_x, HNSC_train_y_e, HNSC_NE_frac_tr) +  
-        cox_nll_vec(cphdnn, LUAD_train_x, LUAD_train_y_e, LUAD_NE_frac_tr) +  
+        cox_nll_vec(cphdnn, tcga_datasets[DS_name]["data_prep"]["train_x"], 
+            tcga_datasets[DS_name]["data_prep"]["train_y_e"], 
+            tcga_datasets[DS_name]["data_prep"]["NE_frac_tr"]) +
         l2_penalty(cphdnn) * cph_wd 
     end 
-    OUTS_tr = cphdnn(brca_train_x)
-    OUTS_tst = cphdnn(brca_test_x)
+    OUTS_tr = cphdnn(tcga_datasets[DS_name]["data_prep"]["train_x"])
+    OUTS_tst = cphdnn(tcga_datasets[DS_name]["data_prep"]["test_x"])
     
     # OUTS_tr = cphdnn(lgg_train_x)
     # OUTS_tst = cphdnn(lgg_test_x)
     
-    lossval_combined = cox_nll_vec(cphdnn, brca_train_x, brca_train_y_e, brca_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, lgg_train_x, lgg_train_y_e, lgg_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, ov_train_x, ov_train_y_e, ov_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, BLCA_train_x, BLCA_train_y_e, BLCA_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, CESC_train_x, CESC_train_y_e, CESC_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, COAD_train_x, COAD_train_y_e, COAD_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, ESCA_train_x, ESCA_train_y_e, ESCA_NE_frac_tr) + 
-    cox_nll_vec(cphdnn, HNSC_train_x, HNSC_train_y_e, HNSC_NE_frac_tr) +  
-    cox_nll_vec(cphdnn, LUAD_train_x, LUAD_train_y_e, LUAD_NE_frac_tr) +  
-    l2_penalty(cphdnn) * cph_wd 
-
-    cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(brca_train_y_t, brca_train_y_e, -1 * OUTS_tr)
+    lossval_combined = cox_nll_vec(cphdnn, tcga_datasets[DS_name]["data_prep"]["train_x"], 
+            tcga_datasets[DS_name]["data_prep"]["train_y_e"], 
+            tcga_datasets[DS_name]["data_prep"]["NE_frac_tr"]) +
+        l2_penalty(cphdnn) * cph_wd 
+    cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index( tcga_datasets[DS_name]["data_prep"]["train_y_t"],tcga_datasets[DS_name]["data_prep"]["train_y_e"], -1 * OUTS_tr)
     # cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(lgg_train_y_t, lgg_train_y_e, -1 * OUTS_tr)
-    
-    cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(brca_test_y_t, brca_test_y_e, -1 *OUTS_tst)
+        
+    cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(tcga_datasets[DS_name]["data_prep"]["test_y_t"], tcga_datasets[DS_name]["data_prep"]["test_y_t"], -1 *OUTS_tst)
     # cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(lgg_test_y_t, lgg_test_y_e, -1 * OUTS_tst)
     
-    if i % 100 ==  0 || i == 1
+    if i % 500 ==  0 || i == 1
         println("$i TRAIN lossval combined : $(round(lossval_combined,digits =3)) cind: $(round(cind_tr, digits = 3)) \t TEST cind: $(round(cind_test, digits = 3)) [$(Int(cdnt_tst)), $(Int(ddnt_tst)), $(Int(tied_tst))]")
     end 
     Flux.update!(cph_opt,cph_ps, cph_gs)
     #Flux.update!(opt2,ps2, gs2)
-    brca_params_dict["cph_tst_c_ind"] = cind_test
-    brca_params_dict["cph_train_c_ind"] = cind_tr
-    brca_params_dict["step"] = i 
+    tcga_datasets[DS_name]["params"]["cph_tst_c_ind"] = cind_test
+    tcga_datasets[DS_name]["params"]["cph_train_c_ind"] = cind_tr
+    tcga_datasets[DS_name]["params"]["step"] = i 
 end
 # model_params_path = "$(brca_params_dict["session_id"])/$(brca_params_dict["model_type"])_$(brca_params_dict["modelid"])"
 # mkdir("RES/$model_params_path")

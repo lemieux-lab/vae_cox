@@ -15,6 +15,18 @@ struct MLSurvDataset
     survt::Array
     surve::Array
 end 
+function load_tcga_datasets(infiles)
+    
+    out_dict = Dict()
+    for infile in infiles
+        DataSet = MLSurvDataset(infile)
+        name_tag = split(infile,"_")[3]
+        out_dict["$(name_tag)"] = Dict("dataset"=>DataSet,
+        "name" => name_tag
+        ) 
+    end 
+    return out_dict
+end 
 
 function MLSurvDataset(infilename)
     infile = h5open(infilename, "r")
@@ -75,31 +87,40 @@ function data_prep(DATA::MLDataset, params_dict;nfolds = 5, nepochs =2000, dim_r
     
     return train_x, train_y, test_x, test_y,  params_dict
 end
+function data_prep!(tcga_datasets, base_params)
+    for dataset_name in keys(tcga_datasets)
+        DataDict = tcga_datasets[dataset_name]
+        DATA = DataDict["dataset"]
+        keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
+        println("nb genes : $(sum(keep))")
+        println("nb patients : $(size(DATA.samples)[1])")
+        println("% uncensored : $(mean(DATA.surve .!= 0))")
+        
+        DataDict["params"] = deepcopy(base_params)
+        DataDict["params"]["dataset"] = dataset_name
+        DataDict["params"]["nsamples"] = size(DATA.samples)[1]
+        DataDict["params"]["nsamples_test"] = Int(round(size(DATA.samples)[1] / base_params["nfolds"]))
+        DataDict["params"]["ngenes"] = size(DATA.genes[keep])[1]
+        DataDict["params"]["nsamples_train"] = size(DATA.samples)[1] - Int(round(size(DATA.samples)[1] / base_params["nfolds"]))
+        DataDict["params"]["insize"] = size(DATA.genes[keep])[1]
+        # split train test
+        folds = split_train_test(Matrix(DATA.data[:,keep]), DATA.survt, DATA.surve, DATA.samples;nfolds =5)
+        fold = folds[1]
+        # format input data  
+        test_samples = DATA.samples[fold["test_ids"]]
+        train_x, train_y_t, train_y_e, NE_frac_tr, test_x, test_y_t, test_y_e, NE_frac_tst = format_train_test(fold)
+        DataDict["data_prep"] = Dict("train_x"=>train_x, "train_y_t"=>train_y_t,"train_y_e"=>train_y_e,"NE_frac_tr"=>NE_frac_tr, "test_x"=>test_x,
+        "test_y_t"=> test_y_t, "test_y_e"=>test_y_e, "NE_frac_tst"=> NE_frac_tst)
+        
+    end 
+end
 
 function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125, dataset="NA", modeltype="NA", cph_wd = 1e-4)
     keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
     println("nb genes : $(sum(keep))")
     println("nb patients : $(size(DATA.samples)[1])")
     println("% uncensored : $(mean(DATA.surve .!= 0))")
-    params_dict = Dict(
-            ## run infos 
-            "session_id" => session_id, "nfolds" =>5,  "modelid" => "$(bytes2hex(sha256("$(now())"))[1:Int(floor(end/3))])",
-            "machine_id"=>strip(read(`hostname`, String)), "device" => "$(device())", "model_title"=>"AECPHDNN",
-            ## data infos 
-            "dataset" => dataset, "nsamples" => size(DATA.samples)[1],
-            "nsamples_test" => Int(round(size(DATA.samples)[1] / nfolds)), "ngenes" => size(DATA.genes[keep])[1],
-            "nsamples_train" => size(DATA.samples)[1] - Int(round(size(DATA.samples)[1] / nfolds)),
-            ## optim infos 
-            "nepochs" => nepochs, "ae_lr" =>1e-6, "cph_lr" => 1e-5, "ae_wd" => 1e-6, "cph_wd" => cph_wd,
-            ## model infos
-            "model_type"=> modeltype, "dim_redux" => dim_redux, "ae_nb_hls" => 2,
-            "enc_nb_hl" => 2, "enc_hl_size"=> 128,
-            "venc_nb_hl" => 2, "venc_hl_size"=> 128,  "dec_nb_hl" => 2 , "dec_hl_size"=> 128,
-            "nb_clinf" => 0, "cph_nb_hl" => 2, "cph_hl_size" => 512, 
-            "insize" => size(DATA.genes[keep])[1],
-            ## metrics
-            "model_cv_complete" => false
-        )
+    
     # split train test
     folds = split_train_test(Matrix(DATA.data[:,keep]), DATA.survt, DATA.surve, DATA.samples;nfolds =5)
     fold = folds[1]
