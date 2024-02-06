@@ -52,6 +52,21 @@ function MLDataset(infilename)
     return MLDataset(data, samples, genes, biotypes, labels)
 end 
 
+function gather_params(basedir=".")
+    df = DataFrame()
+    for (root, dirs, files) in walkdir(basedir)
+        for file in files
+            if file == "params.bson"
+                # println("Loading $root/$file")
+                d = BSON.load("$root/$file")
+                push!(df, d, cols=:union)
+            end
+        end
+    end
+    return df
+end
+
+df = gather_params("RES/");
 
 function format_train_test(fold; device = gpu)
     # NO ordering ! 

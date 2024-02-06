@@ -20,10 +20,10 @@ using BSON
 using Distributions
 using TSne
 using MultivariateStats
-using JuBox 
 using XLSX
 using UMAP 
 
+using JuBox 
 function set_dirs()
     session_id = "$(now())"
     outpath = "./RES/$session_id"
