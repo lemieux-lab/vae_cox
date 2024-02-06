@@ -132,9 +132,9 @@ end
 
 function data_prep(DATA::MLSurvDataset;nfolds = 5, nepochs =2000, dim_redux= 125, dataset="NA", modeltype="NA", cph_wd = 1e-4)
     keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
-    println("nb genes : $(sum(keep))")
-    println("nb patients : $(size(DATA.samples)[1])")
-    println("% uncensored : $(mean(DATA.surve .!= 0))")
+    println("$dataset : nb genes : $(sum(keep))")
+    println("$dataset : nb patients : $(size(DATA.samples)[1])")
+    println("$dataset : % uncensored : $(round(mean(DATA.surve .!= 0), digits = 3)*100)%")
     params_dict["dataset"] = dataset
     params_dict["nsamples"] = size(DATA.samples)[1]
     params_dict["nsamples_test"] = Int(round(size(DATA.samples)[1] / params_dict["nfolds"]))

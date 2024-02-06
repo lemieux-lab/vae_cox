@@ -2,7 +2,7 @@
 using Pkg
 Pkg.activate(".")
 # imports
-using cuDNN  
+#using cuDNN  
 using CSV
 using DataFrames
 using JSON
