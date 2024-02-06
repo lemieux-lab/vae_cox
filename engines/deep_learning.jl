@@ -1,3 +1,56 @@
+#### MEta learning functions
+
+function dump_results(model, DataSets)
+    for DS_name in keys(DataSets)
+        params_dict = DataSets[DS_name]["params"]
+        params_dict["nparams"] = sum([*(size(x.weight)...) for x in model]) +  params_dict["cph_nb_hl"] * params_dict["cph_hl_size"]
+        model_params_path = "$(params_dict["session_id"])/$(params_dict["model_type"])_$(params_dict["dataset"])_$(params_dict["modelid"])"
+        if !("$(params_dict["model_type"])_$(params_dict["dataset"])_$(params_dict["modelid"])" in readdir("RES/$(params_dict["session_id"])")) 
+            mkdir("RES/$model_params_path") 
+        end 
+        bson("RES/$model_params_path/params.bson",params_dict)
+    end 
+end
+
+function meta_cox_nll_train(model, DS)
+    psum = 0
+    for DS_name in keys(DS)
+        psum += cox_nll_vec(model, DS[DS_name]["data_prep"]["train_x"], 
+            DS[DS_name]["data_prep"]["train_y_e"], 
+            DS[DS_name]["data_prep"]["NE_frac_tr"]) 
+    end 
+    return psum 
+end 
+    
+function meta_eval(model, DS, base_params;verbose = 1, verbose_step = 10)
+    # loss train 
+    lossval_combined = meta_cox_nll_train(model, DS) + l2_penalty(model) * base_params["cph_wd"]
+    TESTDict = Dict()
+    TRAINDict = Dict()
+    for DS_name in keys(DS)
+        OUTS_tst = model(DS[DS_name]["data_prep"]["test_x"])
+        OUTS_tr = model(DS[DS_name]["data_prep"]["train_x"])
+        cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(DS[DS_name]["data_prep"]["test_y_t"], DS[DS_name]["data_prep"]["test_y_e"], -1 * OUTS_tst)
+        cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(DS[DS_name]["data_prep"]["train_y_t"],DS[DS_name]["data_prep"]["train_y_e"], -1 * OUTS_tr)
+    
+        TESTDict[DS_name] = round(cind_test, digits = 3)
+        TRAINDict[DS_name] = round(cind_tr, digits = 3)
+        
+        DS[DS_name]["params"]["cph_tst_c_ind"] = cind_test
+        DS[DS_name]["params"]["cph_train_c_ind"] = cind_tr
+        DS[DS_name]["params"]["step"] = verbose
+
+    end
+    TESTDict["step"] = verbose
+    TRAINDict["step"] = verbose
+    
+    #OUTS_tr = cphdnn(tcga_datasets[DS_name]["data_prep"]["train_x"])
+    
+    if verbose % verbose_step ==  0 || verbose == 1
+        println(DataFrame(TRAINDict))
+        println(DataFrame(TESTDict))
+    end 
+end 
 #### VAE functions 
 
 struct VariationalEncoder
