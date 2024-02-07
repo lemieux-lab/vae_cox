@@ -107,9 +107,9 @@ function data_prep!(tcga_datasets, base_params)
         DataDict = tcga_datasets[dataset_name]
         DATA = DataDict["dataset"]
         keep = [occursin("protein_coding", bt) for bt in DATA.biotypes]
-        println("nb genes : $(sum(keep))")
-        println("nb patients : $(size(DATA.samples)[1])")
-        println("% uncensored : $(mean(DATA.surve .!= 0))")
+        println("$dataset_name nb genes : $(sum(keep))")
+        println("$dataset_name nb patients : $(size(DATA.samples)[1])")
+        println("$dataset_name % uncensored : $(round(mean(DATA.surve .!= 0), digits=3) * 100)%")
         
         DataDict["params"] = deepcopy(base_params)
         DataDict["params"]["dataset"] = dataset_name
