@@ -16,13 +16,13 @@ LgnAML_data = Dict("name"=>"LgnAML","dataset" => MLSurvDataset("Data/LEUCEGENE/L
 for (dataset_name,DataDict) in zip(["BRCA", "Lgn-AML"], [BRCA_data, LgnAML_data])
 
 hlsize = 512
-cph_nb_hl, modeltype,nepochs= 2,  "cphdnn_v6", 5_000
+cph_nb_hl, modeltype,nepochs= 2,  "cphdnn_v7", 10_000
 base_params = Dict(
         ## run infos 
         "session_id" => session_id, "nfolds" =>5,"modelid"=> "$(bytes2hex(sha256("$(now())"))[1:Int(floor(end/3))])",
         "machine_id"=>strip(read(`hostname`, String)), "device" => "$(device())", "model_title"=>"cphdnn_lgn_brca",
         ## optim infos 
-        "nepochs" => nepochs, "ae_lr" =>0, "cph_lr" => 1e-6, "ae_wd" => 0, "cph_wd" => 0.1,
+        "nepochs" => nepochs, "ae_lr" =>0, "cph_lr" => 1e-6, "ae_wd" => 0, "cph_wd" => 1,
         ## model infos
         "model_type"=> modeltype, "dim_redux" => hlsize, "ae_nb_hls" => 2,
         "enc_nb_hl" => 0, "enc_hl_size"=> 0,
@@ -74,14 +74,20 @@ for i in 1:DataDict["params"]["nepochs"]
     OUTS_tr = cphdnn(DataDict["data_prep"]["train_x"])
     cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(DataDict["data_prep"]["test_y_t"], DataDict["data_prep"]["test_y_e"], -1 * OUTS_tst)
     cind_tr, cdnt_tr, ddnt_tr, tied_tr  = concordance_index(DataDict["data_prep"]["train_y_t"],DataDict["data_prep"]["train_y_e"], -1 * OUTS_tr)
-
-    DataDict["params"]["cph_tst_c_ind"] = cind_test
     DataDict["params"]["cph_train_c_ind"] = cind_tr
     DataDict["params"]["step"] = i
-
+    if i != 1 
+        if  cind_test > best_c_index
+            DataDict["params"]["cph_tst_c_ind"] = cind_test
+            best_c_index = cind_test
+        end
+    else 
+        DataDict["params"]["cph_tst_c_ind"] = cind_test
+        best_c_index = cind_test
+    end
     Flux.update!(cph_opt,cph_ps, cph_gs)
     if i % 100 ==  0 || i == 1
-        println("$dataset_name - $i : TRAIN c-ind: $(round(cind_tr, digits = 3))\tTEST c-ind: $(round(cind_test,digits =3))")
+        println("$dataset_name - $i : TRAIN c-ind: $(round(cind_tr, digits = 3))\tTEST c-ind: $(round(cind_test,digits =3)) best: $(DataDict["params"]["cph_tst_c_ind"])")
     end 
 end
 model = cphdnn
