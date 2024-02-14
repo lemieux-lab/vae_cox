@@ -15,6 +15,29 @@ struct MLSurvDataset
     survt::Array
     surve::Array
 end 
+function numerise_labels(DF, colnames)
+    MMs = []
+    level_names = []
+    for colname in colnames
+        levels = unique(DF[:, colname])
+        if length(levels) > 2
+            levels_dict = Dict([(lab, idx) for (idx, lab) in enumerate(levels)])
+            MM = zeros(size(DF)[1], size(levels)[1])
+            for level in levels
+                MM[DF[:,colname].==level, levels_dict[level]] .= 1
+            end
+            push!(level_names, ["$(colname)_$(level)" for level in levels])
+        else 
+            MM = zeros(size(DF)[1],1)
+            MM[DF[:,colname] .== levels[2]] .= 1
+            push!(level_names, "$(colname)_$(levels[2])")
+        end 
+
+        push!(MMs, MM)
+        
+    end 
+    return hcat(MMs...), vcat(level_names...) 
+end
 function load_tcga_datasets(infiles)
     
     out_dict = Dict()

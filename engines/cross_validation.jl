@@ -1279,3 +1279,23 @@ function concordance_index(T, E, S)
     C_index = concordant / (concordant + discordant)  
     return C_index, concordant, discordant, tied_pairs
 end
+
+
+function bootstrap_c_ind(OUTS_TST, Y_T_TST, Y_E_TST)
+    # merge results, obtain risk scores, test data.
+    OUTS = vcat(OUTS_TST...);
+    Y_T = vcat(Y_T_TST...);
+    Y_E = vcat(Y_E_TST...);
+    c_inds = [];
+    bootstrap_n = 1000
+    for i in 1:bootstrap_n
+        sample_ids = sample(collect(1:size(OUTS)[1]), size(OUTS)[1], replace = true)
+        cind_test,cdnt_tst, ddnt_tst, tied_tst = concordance_index(Y_T[sample_ids],Y_E[sample_ids], -1 * OUTS[sample_ids])
+        push!(c_inds, cind_test)
+    end 
+    sorted_cinds = sort(c_inds)
+    lo_ci = round(sorted_cinds[Int(floor(bootstrap_n * 0.025 ))], digits = 3)
+    up_ci = round(sorted_cinds[Int(floor(bootstrap_n * 0.975 ))], digits = 3)
+    med_c_ind = round(median(sorted_cinds), digits = 3)
+    return med_c_ind, lo_ci, up_ci
+end 
