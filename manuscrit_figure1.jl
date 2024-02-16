@@ -38,10 +38,14 @@ ax1 = Axis(fig[1,1],
     ylabel = "concordance index")
     #limits = (nothing, nothing, 0.45, 0.75))
 lines!(ax1,log10.(ticks[[1,end]]),[0.5,0.5],linetype = "dashed")
-scatter!(ax1,log10.(data_df[data_df[:,"nb_clinf"] .!= 0 ,"insize"]),data_df[data_df[:,"nb_clinf"] .!= 0,"cph_test_c_ind"], label = "CPHDNN 8 CF")
-scatter!(ax1,log10.(data_df[data_df[:,"nb_clinf"] .== 0 ,"insize"]),data_df[data_df[:,"nb_clinf"] .== 0,"cph_test_c_ind"], label = "CPHDNN No CF")
+cphdnn = data_df[data_df[:,"model_type"] .== "cphdnn",:]
+coxridge = data_df[data_df[:,"model_type"] .== "cox_ridge",:]
+#scatter!(ax2,log10.(cphdnn[cphdnn[:,"nb_clinf"] .!= 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .!= 0,"cph_test_c_ind"], label = "CPHDNN 8 CF")
+scatter!(ax1,log10.(cphdnn[cphdnn[:,"nb_clinf"] .== 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .== 0,"cph_test_c_ind"], label = "CPHDNN 0 CF")
+#scatter!(ax2,log10.(coxridge[coxridge[:,"nb_clinf"] .!= 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .!= 0,"cph_test_c_ind"], label = "Cox-ridge 8 CF")
+scatter!(ax1,log10.(coxridge[coxridge[:,"nb_clinf"] .== 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .== 0,"cph_test_c_ind"], label = "Cox-ridge 0 CF")
 axislegend(ax1, position = :rb)
-
+#fig
 dataset_name = "LgnAML"
 data_df = df[df[:,"dataset"] .== dataset_name,:]
 data_df = sort(data_df, ["insize"])
@@ -54,13 +58,17 @@ ax2 = Axis(fig[2,1],
     xlabel = "Input size",
     ylabel = "concordance index")
     #limits = (nothing, nothing, 0.45, 0.75))
-lines!(ax2,log10.(ticks[[1,end]]),[0.5,0.5],linetype = "dashed")
-scatter!(ax2,log10.(data_df[data_df[:,"nb_clinf"] .!= 0 ,"insize"]),data_df[data_df[:,"nb_clinf"] .!= 0,"cph_test_c_ind"], label = "CPHDNN 8 CF")
-scatter!(ax2,log10.(data_df[data_df[:,"nb_clinf"] .== 0 ,"insize"]),data_df[data_df[:,"nb_clinf"] .== 0,"cph_test_c_ind"], label = "CPHDNN No CF")
+lines!(ax2,log10.(ticks[[1,end]]),[0.5,0.5],linetype = :dash)
+cphdnn = data_df[data_df[:,"model_type"] .== "cphdnn",:]
+coxridge = data_df[data_df[:,"model_type"] .== "cox_ridge",:]
+scatter!(ax2,log10.(cphdnn[cphdnn[:,"nb_clinf"] .!= 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .!= 0,"cph_test_c_ind"], label = "CPHDNN 8 CF")
+scatter!(ax2,log10.(cphdnn[cphdnn[:,"nb_clinf"] .== 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .== 0,"cph_test_c_ind"], label = "CPHDNN 0 CF")
+scatter!(ax2,log10.(coxridge[coxridge[:,"nb_clinf"] .!= 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .!= 0,"cph_test_c_ind"], label = "Cox-ridge 8 CF")
+scatter!(ax2,log10.(coxridge[coxridge[:,"nb_clinf"] .== 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .== 0,"cph_test_c_ind"], label = "Cox-ridge 0 CF")
 axislegend(ax2, position = :rb)
-
-CairoMakie.save("figures/dimension_sweep_lgnaml_coxridge_cphdnn.svg",fig)
-CairoMakie.save("figures/dimension_sweep_lgnaml_coxridge_cphdnn.png",fig)
-CairoMakie.save("figures/dimension_sweep_lgnaml_coxridge_cphdnn.pdf",fig)
+fig
+CairoMakie.save("figures/dimension_sweep_lgnaml_brca_coxridge_cphdnn.svg",fig)
+CairoMakie.save("figures/dimension_sweep_lgnaml_brca_coxridge_cphdnn.png",fig)
+CairoMakie.save("figures/dimension_sweep_lgnaml_brca_coxridge_cphdnn.pdf",fig)
 
 fig
