@@ -59,24 +59,24 @@ coxridge = RDM[RDM[:,"model_type"] .== "cox_ridge",:]
 
 ## BRCA DNN CLINF + GE RDM DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .!= 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax1, Xs, Ys, color= "blue")
-lines!(ax1, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 16 CF", linewidth=3)
+scatter!(ax1, Xs, Ys, color= "blue", alpha = 0.5)
+lines!(ax1, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 16 CF", linewidth=3, linestyle =:dash)
 
 ## BRCA DNN NO CLINF - GE RDM DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .== 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax1, Xs, Ys, color = "orange")
-lines!(ax1, SMA(Xs, Ys, k=7)..., color = "orange", label = "CPHDNN 0 CF", linewidth=3)
+scatter!(ax1, Xs, Ys, color = "blue")
+lines!(ax1, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 0 CF", linewidth=3)
 
 ## BRCA RIDGE-CPH CLINF + GE RDM DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .!= 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax1, Xs, Ys, color = "blue", alpha = 0.5)
-lines!(ax1, SMA(Xs, Ys, k=7)..., color = "blue", label = "Cox-ridge 16 CF", linewidth=3, linestyle=:dash)
+scatter!(ax1, Xs, Ys, color = "orange", alpha = 0.5)
+lines!(ax1, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 16 CF", linewidth=3, linestyle=:dash)
 
 
 ## BRCA RIDGE-CPH NO CLINF - GE RDM DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .== 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax1, Xs, Ys, color = "orange", alpha = 0.5)
-lines!(ax1, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 0 CF", linewidth=3, linestyle=:dash)
+scatter!(ax1, Xs, Ys, color = "orange")
+lines!(ax1, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 0 CF", linewidth=3)
 
 Pca = data_df[data_df[:, "dim_redux_type"] .== "PCA",:]
 cphdnn = Pca[Pca[:,"model_type"] .== "cphdnn",:]
@@ -89,27 +89,27 @@ ax3 = Axis(fig[1,2],
     xlabel = "Input size",
     ylabel = "concordance index",
     limits = (nothing, nothing, 0.4, 0.75))
-lines!(ax3,log10.(ticks[[1,end]]),[0.5,0.5],linetype = "dashed")
+lines!(ax3,log10.(ticks[[1,end]]),[0.5,0.5],linestyle = :dash)
 
 ## BRCA DNN CLINF + GE PCA DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .!= 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax3, Xs, Ys, color= "blue")
-lines!(ax3, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 16 CF", linewidth=3)
+scatter!(ax3, Xs, Ys, color= "blue", alpha = 0.5)
+lines!(ax3, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 16 CF", linewidth=3, linestyle=:dash)
 
 ## BRCA DNN CLINF + GE PCA DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .== 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax3, Xs, Ys, color= "orange")
-lines!(ax3, SMA(Xs, Ys, k=7)..., color = "orange", label = "CPHDNN 0 CF", linewidth=3)
+scatter!(ax3, Xs, Ys, color= "blue")
+lines!(ax3, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 0 CF", linewidth=3)
 
 ## BRCA Cox-Rdige NO CLINF - GE PCA DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .!= 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax3, Xs, Ys, color = "blue", alpha=0.5)
-lines!(ax3, SMA(Xs, Ys, k=7)..., color = "blue", label = "Cox-ridge 16 CF", linewidth=3, linestyle=:dash)
+scatter!(ax3, Xs, Ys, color = "orange", alpha=0.5)
+lines!(ax3, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 16 CF", linewidth=3, linestyle=:dash)
 
 ## BRCA DNN NO CLINF - GE PCA DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .== 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax3, Xs, Ys, color= "orange", alpha = 0.5)
-lines!(ax3, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 0 CF",linewidth=3, linestyle=:dash)
+scatter!(ax3, Xs, Ys, color= "orange")
+lines!(ax3, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 0 CF",linewidth=3)
 
 axislegend(ax3, position = :rb)    
 fig
@@ -127,8 +127,8 @@ ax2 = Axis(fig[2,1],
     title = "Survival prediction in $dataset_name with CPH-DNN & COX-ridge \n by input size with random and directed dimensionality reductions",
     xlabel = "Input size",
     ylabel = "concordance index",
-    limits = (nothing, nothing, 0.3, 0.75))
-lines!(ax2,log10.(ticks[[1,end]]),[0.5,0.5],linetype = :dash)
+    limits = (nothing, nothing, 0.35, 0.75))
+lines!(ax2,log10.(ticks[[1,end]]),[0.5,0.5],linestyle = :dash)
 RDM = data_df[data_df[:, "dim_redux_type"] .== "RDM",:]
 
 cphdnn = RDM[RDM[:,"model_type"] .== "cphdnn",:]
@@ -136,25 +136,25 @@ coxridge = RDM[RDM[:,"model_type"] .== "cox_ridge",:]
 
 ## LGN CPHDNN CLINF + GE DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .!= 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax2, Xs, Ys, color= "blue")
-lines!(ax2, SMA(Xs, Ys)..., color = "blue", label = "CPHDNN 8 CF", linewidth=3)
+scatter!(ax2, Xs, Ys, color= "blue", alpha =0.5)
+lines!(ax2, SMA(Xs, Ys)..., color = "blue", label = "CPHDNN 8 CF", linewidth=3, linestyle=:dash)
 
 ## LGN CPHDNN NO CLINF - GE DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .== 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax2, Xs, Ys, color = "orange")
-lines!(ax2, SMA(Xs, Ys)..., color = "orange", label = "CPHDNN 0 CF", linewidth=3)
+scatter!(ax2, Xs, Ys, color = "blue")
+lines!(ax2, SMA(Xs, Ys)..., color = "blue", label = "CPHDNN 0 CF", linewidth=3)
 
 ## LGN Cox-ridge CLINF + GE DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .!= 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax2, Xs, Ys, color= "blue", alpha = 0.5)
-lines!(ax2, SMA(Xs, Ys)..., color = "blue", label = "Cox-ridge 8 CF", linewidth=3, linestyle=:dash)
+scatter!(ax2, Xs, Ys, color= "orange", alpha = 0.5)
+lines!(ax2, SMA(Xs, Ys)..., color = "orange", label = "Cox-ridge 8 CF", linewidth=3, linestyle=:dash)
 
 ## LGN Cox-ridge NO CLINF + GE DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .== 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax2, Xs, Ys, color= "orange", alpha = 0.5)
-lines!(ax2, SMA(Xs, Ys)..., color = "orange", label = "Cox-ridge 0 CF", linewidth=3, linestyle=:dash)
+scatter!(ax2, Xs, Ys, color= "orange")
+lines!(ax2, SMA(Xs, Ys)..., color = "orange", label = "Cox-ridge 0 CF", linewidth=3)
 
-
+fig
 Pca = data_df[data_df[:, "dim_redux_type"] .== "PCA",:]
 cphdnn = Pca[Pca[:,"model_type"] .== "cphdnn",:]
 coxridge = Pca[Pca[:,"model_type"] .== "cox_ridge",:]
@@ -165,28 +165,28 @@ ax4 = Axis(fig[2,2],
     title = "Survival prediction in $dataset_name with CPH-DNN & COX-ridge \n by input size with directed dimensionality reductions (PCA / UMAP)",
     xlabel = "Input size",
     ylabel = "concordance index",
-    limits = (nothing, nothing, 0.3, 0.75))
-lines!(ax4,log10.(ticks[[1,end]]),[0.5,0.5],linetype = "dashed")
-
+    limits = (nothing, nothing, 0.35, 0.75))
+lines!(ax4,log10.(ticks[[1,end]]),[0.5,0.5],linestyle = :dash)
+fig
 ## BRCA DNN CLINF + GE PCA DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .!= 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax4, Xs, Ys, color= "blue")
-lines!(ax4, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 16 CF", linewidth=3)
-
+scatter!(ax4, Xs, Ys, color= "blue", alpha = 0.5)
+lines!(ax4, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 16 CF", linewidth=3, linestyle=:dash)
+fig
 ## BRCA DNN CLINF + GE PCA DIM SWEEP  
 Xs, Ys = log10.(cphdnn[cphdnn[:,"nb_clinf"] .== 0 ,"insize"]), cphdnn[cphdnn[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax4, Xs, Ys, color= "orange")
-lines!(ax4, SMA(Xs, Ys, k=7)..., color = "orange", label = "CPHDNN 0 CF", linewidth=3)
+scatter!(ax4, Xs, Ys, color= "blue")
+lines!(ax4, SMA(Xs, Ys, k=7)..., color = "blue", label = "CPHDNN 0 CF", linewidth=3)
 
 ## BRCA Cox-Rdige NO CLINF - GE PCA DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .!= 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .!= 0,"cph_test_c_ind"]
-scatter!(ax4, Xs, Ys, color = "blue", alpha=0.5)
-lines!(ax4, SMA(Xs, Ys, k=7)..., color = "blue",label = "Cox-ridge 16 CF", linewidth=3, linestyle=:dash)
+scatter!(ax4, Xs, Ys, color = "orange", alpha=0.5)
+lines!(ax4, SMA(Xs, Ys, k=7)..., color = "orange",label = "Cox-ridge 16 CF", linewidth=3, linestyle=:dash)
 
 ## BRCA DNN NO CLINF - GE PCA DIM SWEEP  
 Xs, Ys = log10.(coxridge[coxridge[:,"nb_clinf"] .== 0 ,"insize"]), coxridge[coxridge[:,"nb_clinf"] .== 0,"cph_test_c_ind"]
-scatter!(ax4, Xs, Ys, color= "orange", alpha = 0.5)
-lines!(ax4, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 0 CF", linewidth=3, linestyle=:dash)
+scatter!(ax4, Xs, Ys, color= "orange")
+lines!(ax4, SMA(Xs, Ys, k=7)..., color = "orange", label = "Cox-ridge 0 CF", linewidth=3)
 
 axislegend(ax4, position = :rb)  
 fig
