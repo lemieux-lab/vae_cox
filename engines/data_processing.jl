@@ -89,7 +89,6 @@ function gather_params(basedir=".")
     return df
 end
 
-df = gather_params("RES/");
 
 function format_train_test(fold; device = gpu)
     # NO ordering ! 

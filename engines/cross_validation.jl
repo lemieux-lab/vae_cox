@@ -1297,5 +1297,5 @@ function bootstrap_c_ind(OUTS_TST, Y_T_TST, Y_E_TST)
     lo_ci = round(sorted_cinds[Int(floor(bootstrap_n * 0.025 ))], digits = 3)
     up_ci = round(sorted_cinds[Int(floor(bootstrap_n * 0.975 ))], digits = 3)
     med_c_ind = round(median(sorted_cinds), digits = 3)
-    return med_c_ind, lo_ci, up_ci
+    return med_c_ind, lo_ci, up_ci, sorted_cinds
 end 
