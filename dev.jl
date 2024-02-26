@@ -49,20 +49,20 @@ LGNAML_data["CF"] = zeros(size(LGNAML_data["dataset"].data)[1],0)
 ### Use CPHDNN, Cox-ridge 
 ### 10 replicates
 nepochs = 5000
-DS_list = shuffle([BRCA_data, OV_data, LGG_data, LGNAML_data])
+DS_list = shuffle([BRCA_data, LGNAML_data, LGG_data, OV_data])
 for DataSet in DS_list
 
     ### EVAL WITH PCA 
     dim_redux_list = shuffle(vcat([1,2,3,4,5,10,15,20,25,50,75,100,125,150,175], collect(200:100:size(DataSet["dataset"].data)[1])))
     for dim_redux_size in dim_redux_list
-        evaluate_coxridge_pca(DataSet, dim_redux_size, cph_wd = 1e-2);
-        evaluate_cphdnn_pca(DataSet,  dim_redux_size);
+        evaluate_cphdnn_pca(DataSet, dim_redux_size, nepochs=nepochs, cph_wd= 1e-2);
+        evaluate_coxridge_pca(DataSet, dim_redux_size, nepochs=nepochs, cph_lr = 1e-4);
     end  
 
     ngenes = sum(DataSet["CDS"])
     dim_redux_list = shuffle([0,1,2,3,4,5,10,15,20,25,50,75,100,125,250,375,500,1_000,1_500,2_000,2_500,3000,5_000,6000,7000,8000,9000,10_000,11_000,12000,13000,14000,ngenes])
     for dim_redux_size in dim_redux_list
-        evaluate_cphdnn_rdm(DataSet, dim_redux_size, nepochs =nepochs, cph_wd =1e-2);
-        evaluate_coxridge_rdm(DataSet, dim_redux_size, nepochs = nepochs);
+        evaluate_cphdnn_rdm(DataSet, ngenes, nepochs =nepochs, cph_wd =1e-2);
+        evaluate_coxridge_rdm(DataSet, ngenes, nepochs =nepochs, cph_lr = 1e-5);
     end
 end 
