@@ -24,9 +24,9 @@ using XLSX
 using UMAP 
 
 using JuBox 
-function set_dirs()
+function set_dirs(basedir="./RES")
     session_id = "$(now())"
-    outpath = "./RES/$session_id"
+    outpath = "$basedir/$session_id"
     mkdir(outpath)
 
     return outpath, session_id

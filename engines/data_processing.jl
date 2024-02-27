@@ -89,6 +89,23 @@ function gather_params(basedir=".")
     return df
 end
 
+function gather_learning_curves(basedir=".")
+    df = DataFrame()
+    frames = []
+    for (root, dirs, files) in walkdir(basedir)
+        for file in files
+            if file == "learning_curves.bson"
+                # println("Loading $root/$file")
+                d = DataFrame(BSON.load("$root/$file"))
+                df = append!(df, d)
+
+            end
+        end
+    end
+    return df
+end
+
+
 
 function format_train_test(fold; device = gpu)
     # NO ordering ! 
