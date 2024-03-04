@@ -138,20 +138,59 @@ make_boxplots(PARAMS)
 
 
 
-
-LC = gather_learning_curves("RES2")
+PARAMS = gather_params("RES")
+LC = gather_learning_curves("RES")
 LOSSES_DF = innerjoin(LC, PARAMS, on = "modelid");
-fig = Figure(size = (1024,1024));
-
-ax1 = Axis(fig[1,1]; 
-    xlabel = "steps", ylabel = "Loss value", title = "$(unique(LOSSES_DF[:,"model_title"])[1]) Learning curve");
-for model_id in unique(LOSSES_DF[:,"modelid"])
-    MOD_data = sort(LOSSES_DF[LOSSES_DF[:,"modelid"] .== model_id,:], "steps")
-    for foldn in 1:5
-        FOLD_data = MOD_data[MOD_data[:,"foldns"] .== foldn,:]
-        lines!(ax1, FOLD_data[FOLD_data[:,"tst_train"] .== "train","steps"], FOLD_data[FOLD_data[:,"tst_train"] .== "train","loss_vals"], color = "blue") 
-        lines!(ax1, FOLD_data[FOLD_data[:,"tst_train"] .== "test","steps"], FOLD_data[FOLD_data[:,"tst_train"] .== "test","loss_vals"], color = "orange")
+fig = Figure(size = (1024,512));
+TRUNC_DF = LOSSES_DF[(LOSSES_DF.steps .% 100 .== 0) .| (LOSSES_DF.steps .== 1),:]
+for (row_id, dataset) in enumerate(["LgnAML", "BRCA"])
+    DATA_df = TRUNC_DF[TRUNC_DF[:,"dataset"] .== dataset,:]
+    for (col_id, dim_redux_type) in enumerate(unique(DATA_df.dim_redux_type))
+        DRD_df = DATA_df[DATA_df[:,"dim_redux_type"] .== dim_redux_type,:]
+        DRD_df = DRD_df[DRD_df[:,"model_type"] .== "cphdnn",:]
+        ax = Axis(fig[row_id,col_id]; 
+            xlabel = "steps", ylabel = "Loss value", 
+            title = "$dataset - $dim_redux_type");
+        println("processing $dataset - $dim_redux_type ...")
+        for modelid in unique(DRD_df[:, "modelid"])
+            MOD_df = DRD_df[DRD_df[:,"modelid"] .== modelid, :]
+            for foldn in 1:5
+                FOLD_data = sort(MOD_df[MOD_df[:,"foldns"] .== foldn,:], "steps")
+                lines!(ax, FOLD_data[FOLD_data[:,"tst_train"] .== "train","steps"], FOLD_data[FOLD_data[:,"tst_train"] .== "train","loss_vals"], color = "blue") 
+                lines!(ax, FOLD_data[FOLD_data[:,"tst_train"] .== "test","steps"], FOLD_data[FOLD_data[:,"tst_train"] .== "test","loss_vals"], color = "orange")
+            end    
+        end 
     end 
-end
+end 
 #axislegend(ax1)
+CairoMakie.save("figures/cphdnn_lgnaml_brca_coxridge_cphdnn_rdm_pca_clinf_sign_overfit.svg",fig)
+CairoMakie.save("figures/cphdnn_lgnaml_brca_coxridge_cphdnn_rdm_pca_clinf_sign_overfit.png",fig)
+CairoMakie.save("figures/cphdnn_lgnaml_brca_coxridge_cphdnn_rdm_pca_clinf_sign_overfit.pdf",fig)
+
+fig = Figure(size = (1024,512));
+TRUNC_DF = LOSSES_DF[(LOSSES_DF.steps .% 100 .== 0) .| (LOSSES_DF.steps .== 1),:]
+for (row_id, dataset) in enumerate(["LgnAML", "BRCA"])
+    DATA_df = TRUNC_DF[TRUNC_DF[:,"dataset"] .== dataset,:]
+    for (col_id, dim_redux_type) in enumerate(unique(DATA_df.dim_redux_type))
+        DRD_df = DATA_df[DATA_df[:,"dim_redux_type"] .== dim_redux_type,:]
+        DRD_df = DRD_df[DRD_df[:,"model_type"] .== "coxridge",:]
+        ax = Axis(fig[row_id,col_id]; 
+            xlabel = "steps", ylabel = "Loss value", 
+            title = "$dataset - $dim_redux_type");
+        println("processing $dataset - $dim_redux_type ...")
+        for modelid in unique(DRD_df[:, "modelid"])
+            MOD_df = DRD_df[DRD_df[:,"modelid"] .== modelid, :]
+            for foldn in 1:5
+                FOLD_data = sort(MOD_df[MOD_df[:,"foldns"] .== foldn,:], "steps")
+                lines!(ax, FOLD_data[FOLD_data[:,"tst_train"] .== "train","steps"], FOLD_data[FOLD_data[:,"tst_train"] .== "train","loss_vals"], color = "blue") 
+                lines!(ax, FOLD_data[FOLD_data[:,"tst_train"] .== "test","steps"], FOLD_data[FOLD_data[:,"tst_train"] .== "test","loss_vals"], color = "orange")
+            end    
+        end 
+    end 
+end 
+#axislegend(ax1)
+CairoMakie.save("figures/coxridge_lgnaml_brca_coxridge_cphdnn_rdm_pca_clinf_sign_overfit.svg",fig)
+CairoMakie.save("figures/coxridge_lgnaml_brca_coxridge_cphdnn_rdm_pca_clinf_sign_overfit.png",fig)
+CairoMakie.save("figures/coxridge_lgnaml_brca_coxridge_cphdnn_rdm_pca_clinf_sign_overfit.pdf",fig)
+
 fig

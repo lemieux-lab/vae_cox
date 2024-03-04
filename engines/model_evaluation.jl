@@ -9,6 +9,11 @@ function prep_data_params_dict!(DataSet, dim_redux_size;
     if dim_redux_type == "CLINF"
         X_data = DataSet["CF"]
     end 
+    if dim_redux_type == "STD"
+        VARS = var(CDS_data, dims = 1)
+        genes = reverse(sortperm(vec(VARS)))[1:dim_redux_size]
+        X_data = CDS_data[:,genes] 
+    end 
     nb_clinf = size(clinical_factors)[2]
     # init params dict
     DataSet["params"] = Dict(
